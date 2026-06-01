@@ -1,0 +1,7 @@
+<!-- Возвращаем обновленный список чатов для сайдбара -->
+{% include "partials/sidebar_chats.html" %}
+
+<!-- И с помощью hx-swap-oob="true" мгновенно перерисовываем рабочую область на новую пустую -->
+<main id="chat-workspace" hx-swap-oob="true">
+    {% include "partials/chat_workspace.html" %}
+</main>

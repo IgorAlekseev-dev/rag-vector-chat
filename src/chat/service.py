@@ -1,5 +1,9 @@
 from fastapi.concurrency import run_in_threadpool
 from openai import AsyncOpenAI
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+
+from src.chat.models import Chat, Message
 from src.config import settings
 from src.database import qdrant_client
 from src.documents.service import model, COLLECTION_NAME
@@ -62,3 +66,38 @@ async def generate_answer(user_message: str) -> str:
     )
 
     return response.choices[0].message.content
+
+async def get_all_chats(db: AsyncSession) -> list[Chat]:
+    """Возвращает список всех чатов, сортируя их по дате создания"""
+    result = await db.execute(select(Chat).order_by(Chat.created_at.desc()))
+    return list(result.scalars().all())
+
+async def get_chat(db: AsyncSession, chat_id: int) -> Chat | None:
+    """Находит один чат по его ID"""
+    result = await db.execute(select(Chat).where(Chat.id == chat_id))
+    return result.scalar_one_or_none()
+
+async def create_chat(db: AsyncSession, title: str = "Новый чат") -> Chat:
+    """Создает новую сессию чата"""
+    chat = Chat(title=title)
+    db.add(chat)
+    await db.commit()
+    await db.refresh(chat)
+    return chat
+
+async def get_chat_messages(db: AsyncSession, chat_id: int) -> list[Message]:
+    """Возвращает всю историю сообщений для выбранного чата"""
+    result = await db.execute(
+        select(Message)
+        .where(Message.chat_id == chat_id)
+        .order_by(Message.created_at.asc())
+    )
+    return list(result.scalars().all())
+
+async def save_message(db: AsyncSession, chat_id: int, role: str, content: str) -> Message:
+    """Сохраняет сообщение (пользователя или ИИ) в базу данных"""
+    msg = Message(chat_id=chat_id, role=role, content=content)
+    db.add(msg)
+    await db.commit()
+    await db.refresh(msg)
+    return msg

@@ -1,20 +1,48 @@
-from fastapi import FastAPI, Request
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Request, Depends
 from fastapi.templating import Jinja2Templates
+from sqlalchemy.ext.asyncio import AsyncSession
+import markdown
+
+from src.database import init_db, get_db
 from src.documents.router import router as documents_router
 from src.chat.router import router as chat_router
+from src.chat import service as chat_service
 
-# Инициализируем приложение
-app = FastAPI(title="Vector Search App")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("Запуск сервера: инициализация базы данных SQLite...")
+    await init_db()
+    yield
+    print("Выключение сервера...")
 
-# Подключаем папку с шаблонами (там лежит ваш index.html)
+app = FastAPI(title="Vector Search App", lifespan=lifespan)
 templates = Jinja2Templates(directory="src/templates")
+templates.env.filters['markdown'] = lambda text: markdown.markdown(text, extensions=['fenced_code', 'tables'])
 
 app.include_router(documents_router)
 app.include_router(chat_router)
 
 @app.get("/")
-async def read_root(request: Request):
-    """
-    Главная страница: возвращает базовый интерфейс чата.
-    """
-    return templates.TemplateResponse(request=request, name="index.html")
+async def read_root(request: Request, db: AsyncSession = Depends(get_db)):
+    """Инициализация главного экрана: загружаем чаты и активный workspace"""
+    chats = await chat_service.get_all_chats(db)
+    
+    # Если в базе нет чатов (самый первый запуск), создаем дефолтный чат
+    if not chats:
+        active_chat = await chat_service.create_chat(db, "Мой первый чат")
+        chats = [active_chat]
+    else:
+        active_chat = chats[0]
+        
+    messages = await chat_service.get_chat_messages(db, active_chat.id)
+    
+    return templates.TemplateResponse(
+        request=request, 
+        name="index.html", 
+        context={
+            "chats": chats,
+            "active_chat": active_chat,
+            "messages": messages
+        }
+    )
