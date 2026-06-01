@@ -20,7 +20,7 @@ rag-vector-chat/
 │   ├── config.py           # Глобальные настройки (Pydantic BaseSettings)
 │   ├── database.py         # Подключение к SQLite и Qdrant
 │   └── main.py             # Точка входа FastAPI
-├── .env                    # Секретные ключи
+├── .env.example            # Пример секретных ключей
 ├── docker-compose.yml      # Для запуска Qdrant и всего проекта
 ├── Dockerfile
 └── README.md

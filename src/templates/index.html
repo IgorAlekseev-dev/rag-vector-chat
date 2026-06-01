@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Векторный поиск</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.11/dist/basecoat.cdn.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.11/dist/js/all.min.js" defer></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        background: '#191919',
+                        sidebar: '#191919',
+                        card: '#252525',
+                        'card-hover': '#333334',
+                        foreground: '#e8eaed',
+                        muted: '#9aa0a6',
+                        border: '#3c4043',
+                        accent: '#a8c7fa',
+                        'accent-hover': '#93b8f5',
+                        'warning-bg': '#2d2a1e',
+                        'warning-border': '#f9ab00',
+                        'input-bg': '#303134',
+                        'badge-bg': '#1a1a1b',
+                        'star-yellow': '#f9ab00',
+                        'code-blue': '#a8c7fa',
+                        'image-purple': '#c58af9',
+                        'video-green': '#81c995',
+                        'speech-red': '#f28b82',
+                        'realtime-orange': '#f9ab00',
+                        'toggle-bg': '#1a73e8',
+                        'grounding-bg': '#1a1a2e',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', 'Google Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #191919;
+            color: #e8eaed;
+            overflow: hidden;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #5f6368;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #80868b;
+        }
+
+        /* Sidebar styles */
+        .sidebar-left {
+            width: 260px;
+            min-width: 260px;
+            background: #191919;
+            border-right: 0.5px solid #3f40425a;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 16px;
+            margin: 0 8px;
+            border-radius: 8px;
+            color: #9aa0a6;
+            font-size: 14px;
+            text-decoration: none;
+            transition: all 0.15s ease;
+            cursor: pointer;
+        }
+
+        .nav-item:hover {
+            background: #191919;
+            color: #e8eaed;
+        }
+
+        .nav-item.active {
+            background: #191919;
+            color: #e8eaed;
+        }
+
+        .nav-item svg {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        .nav-group-title {
+            font-size: 12px;
+            font-weight: 500;
+            color: #9aa0a6;
+            padding: 8px 24px;
+            text-transform: none;
+            letter-spacing: 0;
+        }
+
+        /* Right panel */
+        .right-panel {
+            width: 360px;
+            min-width: 360px;
+            background: #191919;
+            border-left: 0.5px solid #3f40425a;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        /* Chat input */
+        .chat-input-container {
+            background: #252525;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 14px 18px;
+        }
+
+        .chat-input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #e8eaed;
+            font-size: 14px;
+            width: 100%;
+            resize: none;
+            font-family: inherit;
+            min-height: 24px;
+            max-height: 160px; /* limit growth so it won't occupy half the screen */
+            overflow: auto;
+        }
+
+        .chat-input::placeholder {
+            color: #80868b;
+        }
+
+        /* Toggle switch */
+        .toggle-switch {
+            appearance: none;
+            width: 36px;
+            height: 20px;
+            background: #5f6368;
+            border-radius: 10px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.2s ease;
+        }
+
+        .toggle-switch:checked {
+            background: #1a73e8;
+        }
+
+        .toggle-switch:checked::after {
+            transform: translateX(16px);
+        }
+
+        /* Slider */
+        .slider-control {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 4px;
+            background: #5f6368;
+            border-radius: 2px;
+            outline: none;
+        }
+
+        .slider-control::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #e8eaed;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        .slider-control::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #e8eaed;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        /* Select dropdown */
+        .bc-select {
+            background: #252525;
+            border: 0.5px solid #3f40425a;
+            border-radius: 8px;
+            color: #e8eaed;
+            padding: 8px 12px;
+            font-size: 14px;
+            width: 100%;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .bc-select:focus {
+            border-color: #a8c7fa;
+        }
+
+        /* Tool row */
+        .tool-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+        }
+
+        .tool-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #e8eaed;
+        }
+
+        .tool-edit {
+            font-size: 12px;
+            color: #9aa0a6;
+            margin-left: 8px;
+        }
+
+        /* Section header */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 0.5px solid #3f40425a;
+        }
+
+        .panel-section {
+            padding: 16px 20px;
+            border-bottom: 0.5px solid #3f40425a;
+        }
+
+        .panel-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: #e8eaed;
+            margin-bottom: 8px;
+        }
+
+        .panel-desc {
+            font-size: 12px;
+            color: #9aa0a6;
+            line-height: 1.5;
+        }
+
+        /* Model card in right panel */
+        .model-card {
+            background: #252525;
+            border: 0.5px solid #3f40425a;
+            border-radius: 10px;
+            padding: 14px;
+        }
+
+        .model-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #e8eaed;
+            margin-bottom: 4px;
+        }
+
+        .model-id {
+            font-size: 12px;
+            color: #80868b;
+            margin-bottom: 8px;
+        }
+
+        /* Submenu arrow */
+        .submenu-arrow {
+            margin-left: auto;
+            transition: transform 0.2s ease;
+        }
+
+        /* Tools section */
+        .tools-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            padding: 4px 0;
+        }
+
+        .tools-content {
+            padding-top: 8px;
+        }
+
+        /* Google search icon */
+        .google-search-icon {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* Main content area: column layout so input stays pinned to bottom */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            padding: 20px 40px;
+        }
+
+        /* Scrollable central area inside main - keeps footer input visible */
+        .main-content > .flex-1 {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        /* Header icons */
+        .header-icon-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            color: #9aa0a6;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .header-icon-btn:hover {
+            background: #252525;
+            color: #e8eaed;
+        }
+
+        /* Start building link */
+        .start-building {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #a8c7fa;
+            font-size: 14px;
+            text-decoration: none;
+            margin-top: 24px;
+            transition: opacity 0.15s ease;
+        }
+
+        .start-building:hover {
+            opacity: 0.8;
+        }
+
+        /* Separator */
+        .nav-separator {
+            height: 1px;
+            background: #3c4043;
+            margin: 8px 16px;
+        }
+
+        /* Run settings header */
+        .run-settings-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            border-bottom: 0.5px solid #3f40425a;
+        }
+
+        .run-settings-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #e8eaed;
+        }
+
+        .run-settings-icons {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Header area of main content */
+        .main-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .main-title-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .menu-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            color: #e8eaed;
+            background: #252525;
+            border: 0.5px solid #3f40425a;
+            cursor: pointer;
+        }
+
+        .playground-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #e8eaed;
+        }
+    </style>
+</head>
+
+<body class="dark">
+    <div class="flex h-screen">
+        <!-- Left Sidebar -->
+        <aside class="sidebar-left">
+            <!-- Logo -->
+            <div class="flex items-center gap-3 px-5 py-4">
+                <div class="flex items-center gap-3">
+                    <div style="width:36px;height:36px;border-radius:8px;background:#454647;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <circle cx="10" cy="10" r="6.2" stroke="white" stroke-width="1.6" fill="none"></circle>
+                            <path d="M15 15l4 4" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                    </div>
+                    <span class="text-[20px] font-medium text-foreground">Векторный поиск</span>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 px-1">
+                <div class="nav-item active">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                    <span>Ваши чаты</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="submenu-arrow">
+                        <path d="m6 9 6 6 6-6" />
+                    </svg>
+                </div>
+
+                <div class="nav-separator"></div>
+
+
+            </nav>
+            <div class="nav-item">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 16v-4" />
+                    <path d="M12 8h.01" />
+                </svg>
+                <span>О программе</span>
+            </div>
+            <div class="nav-item">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path
+                        d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                    <circle cx="12" cy="12" r="3" />
+                </svg>
+                <span>Настройки</span>
+            </div>
+            <div class="nav-item">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+                </svg>
+                <span>Исходный код</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="submenu-arrow">
+                    <path d="M7 7h10v10" />
+                    <path d="M7 17 17 7" />
+                </svg>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <div class="main-header">
+                <div class="main-title-area">
+                    <button class="menu-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 12h18" />
+                            <path d="M3 18h18" />
+                            <path d="M3 6h18" />
+                        </svg>
+                    </button>
+                    <h1 class="playground-title">Чат</h1>
+                </div>
+            </div>
+
+            <!-- Title and Tabs -->
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-light text-foreground">Загрузите файлы</h2>
+            </div>
+
+            <!-- Feature Cards Grid -->
+
+
+            <!-- Spacer -->
+            <div class="flex-1"></div>
+
+            <!-- Chat Input -->
+            <div class="mt-8">
+                <div class="chat-input-container">
+                    <textarea class="chat-input" rows="1" placeholder="Начните вводить запрос..."></textarea>
+                    <div class="flex items-center justify-between mt-3 pt-3">
+                        <div class="flex items-center gap-2">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
+                                style="background: #252525; color: #80868b; border: 0.5px solid #3f40425a;">
+                                <span>Отправить</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" style="opacity:0.8; margin-left:6px;">
+                                    <path d="M5 12h14"></path>
+                                    <path d="m12 5 7 7-7 7"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Panel -->
+        <aside class="right-panel">
+            <!-- Run Settings Header -->
+            <div class="run-settings-header">
+                <span class="run-settings-title">Ваши файлы</span>
+                <div class="run-settings-icons">
+                    <button class="header-icon-btn" style="width: 32px; height: 32px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 6 6 18" />
+                            <path d="m6 6 12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <div class="model-card">
+                    <div class="model-name">PostgreSQL 18 руководство</div>
+                    <div class="model-id">PDF</div>
+                    <p class="text-xs text-muted leading-relaxed">Просто текст с какой-то информацией</p>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Slider functionality
+        document.querySelectorAll('.slider-control').forEach(slider => {
+            const updateSlider = (el) => {
+                const min = parseFloat(el.min || 0);
+                const max = parseFloat(el.max || 100);
+                const value = parseFloat(el.value);
+                const percent = (max === min) ? 0 : ((value - min) / (max - min)) * 100;
+                el.style.setProperty('--slider-value', percent + '%');
+            };
+            updateSlider(slider);
+            slider.addEventListener('input', (e) => updateSlider(e.target));
+        });
+
+        // Auto-resize chat textarea with a max height (prevents occupying half the screen)
+        (function() {
+            const textarea = document.querySelector('.chat-input');
+            if (!textarea) return;
+            const MAX = 160; // px
+            const resize = () => {
+                textarea.style.height = 'auto';
+                const target = Math.min(textarea.scrollHeight, MAX);
+                textarea.style.height = target + 'px';
+                textarea.style.overflowY = (textarea.scrollHeight > MAX) ? 'auto' : 'hidden';
+            };
+            textarea.addEventListener('input', resize);
+            // initialize
+            resize();
+        })();
+    </script>
+</body>
+
+</html>
