@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Векторный поиск</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js"
+        integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V"
+        crossorigin="anonymous"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.11/dist/basecoat.cdn.min.css">
     <script src="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.11/dist/js/all.min.js" defer></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -74,6 +77,19 @@
 
         ::-webkit-scrollbar-thumb:hover {
             background: #80868b;
+        }
+
+        /* Прячем крутилку по умолчанию. HTMX покажет её во время загрузки файла */
+        .htmx-indicator {
+            display: none;
+        }
+
+        .htmx-request .htmx-indicator {
+            display: inline-block;
+        }
+
+        .htmx-request.htmx-indicator {
+            display: inline-block;
         }
 
         /* Sidebar styles */
@@ -155,7 +171,8 @@
             resize: none;
             font-family: inherit;
             min-height: 24px;
-            max-height: 160px; /* limit growth so it won't occupy half the screen */
+            max-height: 160px;
+            /* limit growth so it won't occupy half the screen */
             overflow: auto;
         }
 
@@ -348,7 +365,7 @@
         }
 
         /* Scrollable central area inside main - keeps footer input visible */
-        .main-content > .flex-1 {
+        .main-content>.flex-1 {
             flex: 1;
             overflow-y: auto;
         }
@@ -459,10 +476,13 @@
             <!-- Logo -->
             <div class="flex items-center gap-3 px-5 py-4">
                 <div class="flex items-center gap-3">
-                    <div style="width:36px;height:36px;border-radius:8px;background:#454647;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <div
+                        style="width:36px;height:36px;border-radius:8px;background:#454647;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                            aria-hidden="true">
                             <circle cx="10" cy="10" r="6.2" stroke="white" stroke-width="1.6" fill="none"></circle>
-                            <path d="M15 15l4 4" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <path d="M15 15l4 4" stroke="white" stroke-width="1.6" stroke-linecap="round"
+                                stroke-linejoin="round"></path>
                         </svg>
                     </div>
                     <span class="text-[20px] font-medium text-foreground">Векторный поиск</span>
@@ -578,23 +598,29 @@
             <!-- Run Settings Header -->
             <div class="run-settings-header">
                 <span class="run-settings-title">Ваши файлы</span>
-                <div class="run-settings-icons">
-                    <button class="header-icon-btn" style="width: 32px; height: 32px;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M18 6 6 18" />
-                            <path d="m6 6 12 12" />
-                        </svg>
-                    </button>
-                </div>
             </div>
 
+            <!-- Форма загрузки файла -->
             <div class="panel-section">
-                <div class="model-card">
-                    <div class="model-name">PostgreSQL 18 руководство</div>
-                    <div class="model-id">PDF</div>
-                    <p class="text-xs text-muted leading-relaxed">Просто текст с какой-то информацией</p>
-                </div>
+                <!-- HTMX магия: шлем POST на /upload, ответ вставляем (hx-swap) в начало списка (afterbegin) #document-list -->
+                <form hx-post="/documents/upload" hx-encoding="multipart/form-data" hx-target="#document-list" hx-swap="afterbegin">
+                    <input type="file" name="file" accept="application/pdf" required
+                        class="block w-full text-sm text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-accent file:text-background hover:file:bg-accent-hover cursor-pointer mb-3">
+                    
+                    <button type="submit" class="w-full bg-accent text-background font-medium py-1.5 rounded-lg hover:bg-accent-hover transition flex justify-center items-center gap-2 text-sm">
+                        <span>Загрузить PDF</span>
+                        <!-- Эта иконка появится, пока сервер режет PDF и грузит в Qdrant -->
+                        <svg class="htmx-indicator animate-spin h-4 w-4 text-background" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Список загруженных файлов -->
+            <div id="document-list" class="p-5">
+                <!-- Сюда HTMX будет вставлять карточки из partials/document_card.html -->
             </div>
         </aside>
     </div>
@@ -617,7 +643,7 @@
         });
 
         // Auto-resize chat textarea with a max height (prevents occupying half the screen)
-        (function() {
+        (function () {
             const textarea = document.querySelector('.chat-input');
             if (!textarea) return;
             const MAX = 160; // px
