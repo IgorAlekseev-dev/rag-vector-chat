@@ -1,0 +1,25 @@
+<!-- Сообщение пользователя -->
+<div class="flex justify-end mb-6">
+    <div class="bg-card text-foreground px-5 py-3 rounded-2xl rounded-tr-sm max-w-[80%] border border-border">
+        <p class="text-sm">{{ user_message }}</p>
+    </div>
+</div>
+
+<!-- Сообщение нейросети -->
+<div class="flex justify-start mb-6">
+    <div class="flex items-start gap-4 max-w-[90%]">
+        <div class="w-8 h-8 rounded-full bg-accent flex items-center justify-center flex-shrink-0 mt-1">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#191919" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 8V4H8"></path>
+                <rect width="16" height="12" x="4" y="8" rx="2"></rect>
+                <path d="M2 14h2"></path>
+                <path d="M20 14h2"></path>
+                <path d="M15 13v2"></path>
+                <path d="M9 13v2"></path>
+            </svg>
+        </div>
+        <div class="text-foreground leading-relaxed text-sm pt-1 whitespace-pre-wrap">
+            {{ bot_response }}
+        </div>
+    </div>
+</div>

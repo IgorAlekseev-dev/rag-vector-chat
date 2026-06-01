@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     # Настройки LLM
     LLM_API_KEY: str = ""
     LLM_BASE_URL: str = "https://api.groq.com/openai/v1"
-    LLM_MODEL_NAME: str = "llama3-8b-8192"
+    LLM_MODEL_NAME: str = "llama-3.1-8b-instant"
     
     # Настройки SQLite (используем асинхронный драйвер aiosqlite)
     DATABASE_URL: str = "sqlite+aiosqlite:///./chat_history.db"

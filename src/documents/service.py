@@ -38,26 +38,33 @@ async def process_and_store_pdf(file: UploadFile) -> str:
         tmp_path = tmp.name
 
     try:
-        # Чтение PDF (выполняем в threadpool, так как PyPDF блокирует I/O)
+        # Чтение PDF
         loader = PyPDFLoader(tmp_path)
         docs = await run_in_threadpool(loader.load)
-        full_text = " ".join([doc.page_content for doc in docs])
 
-        # Разбиваем на чанки
-        splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
-        chunks = splitter.split_text(full_text)
+        # РАЗБИВАЕМ ПО-УМНОМУ (split_documents сохраняет метаданные страниц!)
+        # Чуть увеличим размер чанка, чтобы мысль не обрывалась
+        splitter = RecursiveCharacterTextSplitter(chunk_size=700, chunk_overlap=150)
+        chunked_docs = splitter.split_documents(docs)
 
-        # Векторизуем в отдельном потоке (Best Practice для CPU Intensive задач)
-        vectors = await run_in_threadpool(_encode_text, chunks)
+        # Вытаскиваем только тексты для векторизации
+        texts = [doc.page_content for doc in chunked_docs]
+        
+        # Векторизуем
+        vectors = await run_in_threadpool(_encode_text, texts)
 
-        # Подготавливаем точки для Qdrant
+        # Подготавливаем точки для Qdrant (ТЕПЕРЬ С НОМЕРОМ СТРАНИЦЫ!)
         points = [
             PointStruct(
                 id=str(uuid.uuid4()),
                 vector=vec,
-                payload={"text": chunk, "filename": file.filename}
+                payload={
+                    "text": doc.page_content, 
+                    "filename": file.filename,
+                    "page": doc.metadata.get("page", 0) + 1  # PyPDF считает страницы с нуля, прибавляем 1
+                }
             )
-            for chunk, vec in zip(chunks, vectors)
+            for doc, vec in zip(chunked_docs, vectors)
         ]
 
         # Грузим в базу
