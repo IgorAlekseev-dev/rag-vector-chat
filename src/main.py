@@ -25,10 +25,8 @@ app.include_router(chat_router)
 
 @app.get("/")
 async def read_root(request: Request, db: AsyncSession = Depends(get_db)):
-    """Инициализация главного экрана: загружаем чаты и активный workspace"""
     chats = await chat_service.get_all_chats(db)
     
-    # Если в базе нет чатов (самый первый запуск), создаем дефолтный чат
     if not chats:
         active_chat = await chat_service.create_chat(db, "Мой первый чат")
         chats = [active_chat]
@@ -37,12 +35,16 @@ async def read_root(request: Request, db: AsyncSession = Depends(get_db)):
         
     messages = await chat_service.get_chat_messages(db, active_chat.id)
     
+    # Подгружаем документы для активного чата на главной странице!
+    documents = await chat_service.get_chat_documents(db, active_chat.id)
+    
     return templates.TemplateResponse(
         request=request, 
         name="index.html", 
         context={
             "chats": chats,
             "active_chat": active_chat,
-            "messages": messages
+            "messages": messages,
+            "documents": documents
         }
     )

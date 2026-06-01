@@ -27,33 +27,25 @@ def _encode_text(texts: list[str]) -> list[list[float]]:
     prefixed = [f"passage: {t}" for t in texts]
     return model.encode(prefixed).tolist()
 
-async def process_and_store_pdf(file: UploadFile) -> str:
-    """Полный цикл: чтение PDF -> Чанкинг -> Эмбеддинги -> Сохранение в Qdrant"""
+async def process_and_store_pdf(file: UploadFile, chat_id: int) -> str:
+    """Полный RAG-цикл с привязкой векторов к конкретному chat_id"""
     await init_qdrant()
     
-    # Сохраняем загруженный файл во временную папку ОС
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
         content = await file.read()
         tmp.write(content)
         tmp_path = tmp.name
 
     try:
-        # Чтение PDF
         loader = PyPDFLoader(tmp_path)
         docs = await run_in_threadpool(loader.load)
 
-        # РАЗБИВАЕМ ПО-УМНОМУ (split_documents сохраняет метаданные страниц!)
-        # Чуть увеличим размер чанка, чтобы мысль не обрывалась
         splitter = RecursiveCharacterTextSplitter(chunk_size=700, chunk_overlap=150)
         chunked_docs = splitter.split_documents(docs)
 
-        # Вытаскиваем только тексты для векторизации
         texts = [doc.page_content for doc in chunked_docs]
-        
-        # Векторизуем
         vectors = await run_in_threadpool(_encode_text, texts)
 
-        # Подготавливаем точки для Qdrant (ТЕПЕРЬ С НОМЕРОМ СТРАНИЦЫ!)
         points = [
             PointStruct(
                 id=str(uuid.uuid4()),
@@ -61,17 +53,16 @@ async def process_and_store_pdf(file: UploadFile) -> str:
                 payload={
                     "text": doc.page_content, 
                     "filename": file.filename,
-                    "page": doc.metadata.get("page", 0) + 1  # PyPDF считает страницы с нуля, прибавляем 1
+                    "page": doc.metadata.get("page", 0) + 1,
+                    "chat_id": chat_id
                 }
             )
             for doc, vec in zip(chunked_docs, vectors)
         ]
 
-        # Грузим в базу
         if points:
             await qdrant_client.upsert(collection_name=COLLECTION_NAME, points=points, wait=True)
         
         return file.filename
     finally:
-        # Обязательно удаляем временный файл
         os.remove(tmp_path)

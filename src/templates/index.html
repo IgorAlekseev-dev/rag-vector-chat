@@ -502,7 +502,7 @@
 
 <body class="dark">
     <div class="flex h-screen">
-        <!-- Left Sidebar -->
+        <!-- Left Sidebar (Левая панель) -->
         <aside class="sidebar-left shrink-0">
             <!-- Шапка сайдбара (Зафиксирована) -->
             <div class="flex items-center gap-3 px-5 py-4 shrink-0">
@@ -518,9 +518,10 @@
                 <span class="text-[20px] font-medium text-foreground">Векторный поиск</span>
             </div>
 
-            <!-- Средняя часть: Динамический список чатов (Скроллится благодаря hx-target и overflow-y-auto внутри partial) -->
+            <!-- Средняя часть: Скроллящийся динамический список чатов -->
             {% include "partials/sidebar_chats.html" %}
 
+            <!-- Нижняя часть: Фиксированные кнопки -->
             <div class="px-1 py-4 shrink-0 border-t border-[#3f40425a] mt-auto">
                 <div class="nav-item" onclick="openAboutModal()">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -531,7 +532,7 @@
                     </svg>
                     <span>О программе</span>
                 </div>
-                <!-- Кнопка Исходный код. Ведет на ваш будущий GitHub-проект -->
+                <!-- Кнопка Исходный код -->
                 <a href="https://github.com" target="_blank" class="nav-item">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -548,56 +549,16 @@
             </div>
         </aside>
 
-        <!-- Main Content -->
-        <main class="main-content relative h-screen flex flex-col">
-            {% include "partials/chat_workspace.html" %}
-        </main>
-
-        <!-- Right Panel -->
-        <aside class="right-panel">
-            <!-- Run Settings Header -->
-            <div class="run-settings-header">
-                <span class="run-settings-title">Ваши файлы</span>
-            </div>
-
-            <!-- Форма загрузки файла -->
-            <div class="panel-section">
-                <!-- HTMX магия: шлем POST на /upload, ответ вставляем (hx-swap) в начало списка (afterbegin) #document-list -->
-                <form hx-post="/documents/upload" hx-encoding="multipart/form-data" hx-target="#document-list"
-                    hx-swap="afterbegin">
-                    <input type="file" name="file" accept="application/pdf" required
-                        class="block w-full text-sm text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-accent file:text-background hover:file:bg-accent-hover cursor-pointer mb-3">
-
-                    <button type="submit"
-                        class="w-full bg-accent text-background font-medium py-1.5 rounded-lg hover:bg-accent-hover transition flex justify-center items-center gap-2 text-sm">
-                        <span>Загрузить PDF</span>
-                        <!-- Эта иконка появится, пока сервер режет PDF и грузит в Qdrant -->
-                        <svg class="htmx-indicator animate-spin h-4 w-4 text-background"
-                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
-                            </circle>
-                            <path class="opacity-75" fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                            </path>
-                        </svg>
-                    </button>
-                </form>
-            </div>
-
-            <!-- Список загруженных файлов -->
-            <div id="document-list" class="p-5">
-                <!-- Сюда HTMX будет вставлять карточки из partials/document_card.html -->
-            </div>
-        </aside>
+        <!-- Основная область: Чат + Правая панель файлов теперь выводятся чисто из одного шаблона -->
+        {% include "partials/chat_workspace.html" %}
     </div>
 
-    <!-- Модальное окно "О программе" (Красивый темный дизайн по ГОСТу и Basecoat) -->
+    <!-- Модальное окно "О программе" -->
     <div id="about-modal"
         class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center hidden"
         onclick="closeAboutModalOnOverlay(event)">
         <div class="bg-card w-full max-w-lg rounded-2xl border border-border p-6 shadow-2xl relative"
             onclick="event.stopPropagation()">
-            <!-- Кнопка закрытия в углу -->
             <button class="absolute top-4 right-4 text-muted hover:text-foreground transition-colors"
                 onclick="closeAboutModal()">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
@@ -617,7 +578,6 @@
                 <span>О программе</span>
             </h3>
 
-            <!-- Содержимое модального окна -->
             <div class="space-y-4 text-sm text-foreground/90">
                 <p class="leading-relaxed">
                     <strong>Название проекта:</strong> Система интеллектуального анализа технической документации на
@@ -639,7 +599,6 @@
                 </p>
             </div>
 
-            <!-- Кнопка закрытия внизу -->
             <div class="flex justify-end mt-6">
                 <button
                     class="px-4 py-2 bg-accent hover:bg-accent-hover text-background font-medium rounded-lg transition-colors text-sm"
@@ -651,38 +610,22 @@
     </div>
 
     <script>
-        // Initialize Lucide icons
-        lucide.createIcons();
+            // Автоматическое изменение высоты textarea
+            (function () {
+                const textarea = document.querySelector('.chat-input');
+                if (!textarea) return;
+                const MAX = 160;
+                const resize = () => {
+                    textarea.style.height = 'auto';
+                    const target = Math.min(textarea.scrollHeight, MAX);
+                    textarea.style.height = target + 'px';
+                    textarea.style.overflowY = (textarea.scrollHeight > MAX) ? 'auto' : 'hidden';
+                };
+                textarea.addEventListener('input', resize);
+                resize();
+            })();
 
-        // Slider functionality
-        document.querySelectorAll('.slider-control').forEach(slider => {
-            const updateSlider = (el) => {
-                const min = parseFloat(el.min || 0);
-                const max = parseFloat(el.max || 100);
-                const value = parseFloat(el.value);
-                const percent = (max === min) ? 0 : ((value - min) / (max - min)) * 100;
-                el.style.setProperty('--slider-value', percent + '%');
-            };
-            updateSlider(slider);
-            slider.addEventListener('input', (e) => updateSlider(e.target));
-        });
-
-        // Auto-resize chat textarea with a max height (prevents occupying half the screen)
-        (function () {
-            const textarea = document.querySelector('.chat-input');
-            if (!textarea) return;
-            const MAX = 160; // px
-            const resize = () => {
-                textarea.style.height = 'auto';
-                const target = Math.min(textarea.scrollHeight, MAX);
-                textarea.style.height = target + 'px';
-                textarea.style.overflowY = (textarea.scrollHeight > MAX) ? 'auto' : 'hidden';
-            };
-            textarea.addEventListener('input', resize);
-            // initialize
-            resize();
-        })();
-
+        // Скрипты для модального окна "О программе"
         function openAboutModal() {
             const modal = document.getElementById('about-modal');
             modal.classList.remove('hidden');
@@ -693,7 +636,6 @@
             modal.classList.add('hidden');
         }
 
-        // Закрытие при клике на темную область вокруг модалки
         function closeAboutModalOnOverlay(event) {
             closeAboutModal();
         }

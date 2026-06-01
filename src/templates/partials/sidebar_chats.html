@@ -1,21 +1,20 @@
 <nav id="sidebar-chats" class="flex-1 px-1 overflow-y-auto">
-    <!-- Кнопка создания нового чата -->
-    <button hx-post="/chat/new" hx-target="#chat-workspace" hx-swap="outerHTML"
-        class="w-[calc(100%-16px)] mx-2 my-2 bg-card hover:bg-card-hover text-foreground border border-border font-medium py-2 rounded-lg transition-colors text-sm flex items-center justify-center gap-2">
+    <!-- Кнопка создания нового чата. Она шлет POST на бэкенд, а бэкенд сделает мягкий редирект для обновления всего экрана -->
+    <button hx-post="/chat/new" 
+            class="w-[calc(100%-16px)] mx-2 my-2 bg-card hover:bg-card-hover text-foreground border border-border font-medium py-2 rounded-lg transition-colors text-sm flex items-center justify-center gap-2">
         <span>+ Новый чат</span>
     </button>
     <div class="nav-separator"></div>
 
     <!-- Список чатов -->
     {% for chat in chats %}
-    <div class="nav-item {% if chat.id == active_chat.id %}active{% endif %}" hx-get="/chat/{{ chat.id }}"
-        hx-target="#chat-workspace" hx-swap="outerHTML"
-        hx-on:click="document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); this.classList.add('active')"
-        style="cursor: pointer;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-        </svg>
+    <div class="nav-item {% if chat.id == active_chat.id %}active{% endif %}" 
+         hx-get="/chat/{{ chat.id }}" 
+         hx-target="#chat-workspace" 
+         hx-swap="outerHTML"
+         hx-on:click="document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); this.classList.add('active')"
+         style="cursor: pointer;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         <span class="truncate">{{ chat.title }}</span>
     </div>
     {% endfor %}
