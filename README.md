@@ -113,7 +113,7 @@ DATABASE_URL=sqlite+aiosqlite:///./data/chat_history.db
 ### 1. Клонируйте репозиторий
 
 ```bash
-git clone https://github.com/IgorAlekseev-dev/rag-vector-chat
+git clone https://github.com/IgorAlekseev-dev/rag-vector-chat.git
 cd rag-vector-chat
 ```
 
