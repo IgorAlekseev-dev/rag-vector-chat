@@ -12,7 +12,8 @@ class Settings(BaseSettings):
     LLM_MODEL_NAME: str = "llama-3.1-8b-instant"
     
     # Настройки SQLite (используем асинхронный драйвер aiosqlite)
-    DATABASE_URL: str = "sqlite+aiosqlite:///./chat_history.db"
+    # База хранится в смонтированной папке data, чтобы переживать пересоздание контейнера.
+    DATABASE_URL: str = "sqlite+aiosqlite:///./data/chat_history.db"
 
     # Заставляем Pydantic читать данные из .env файла
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

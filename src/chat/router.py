@@ -21,7 +21,7 @@ async def create_new_chat(request: Request, db: AsyncSession = Depends(get_db)):
     # При создании чата документов в нем нет, передаем пустой список []
     return templates.TemplateResponse(
         request=request,
-        name="partials/chat_workspace.html",
+        name="partials/new_chat_response.html",
         context={
             "chats": all_chats,
             "active_chat": new_chat,

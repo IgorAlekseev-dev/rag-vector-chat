@@ -25,7 +25,6 @@ class Message(Base):
 
     chat = relationship("Chat", back_populates="messages")
 
-# Новая модель таблицы для сохранения списка файлов
 class Document(Base):
     __tablename__ = "documents"
 

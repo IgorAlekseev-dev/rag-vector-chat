@@ -549,8 +549,10 @@
             </div>
         </aside>
 
-        <!-- Основная область: Чат + Правая панель файлов теперь выводятся чисто из одного шаблона -->
-        {% include "partials/chat_workspace.html" %}
+        <!-- Основная область: Чат + Правая панель файлов -->
+        <div id="chat-workspace" class="flex flex-1 overflow-hidden">
+            {% include "partials/chat_workspace.html" %}
+        </div>
     </div>
 
     <!-- Модальное окно "О программе" -->
