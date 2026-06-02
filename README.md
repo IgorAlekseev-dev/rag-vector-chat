@@ -119,11 +119,20 @@ cd rag-vector-chat
 
 ### 2. Подготовьте виртуальное окружение и зависимости
 
-Рекомендуемый вариант для локальной разработки:
+Рекомендуемый вариант для локальной разработки через `uv`:
 
 ```bash
 uv venv
 uv pip install -r pyproject.toml
+```
+
+Если вы предпочитаете классический `pip`, используйте такой вариант:
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+python -m pip install --upgrade pip
+pip install aiosqlite fastapi[standard] jinja2 langchain-community langchain-text-splitters markdown openai pydantic-settings pypdf python-multipart qdrant-client sentence-transformers sqlalchemy uvicorn
 ```
 
 ### 3. Запустите Qdrant и приложение локально
